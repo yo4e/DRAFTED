@@ -71,7 +71,9 @@ DRAFTED is designed for local installation and will **not** be published to the 
 
 Recommended installation:
 
-1. Open [Releases](https://github.com/yo4e/DRAFTED/releases/latest) and download the latest `DRAFTED-v*.zip`.
+> **Release note:** the packaged Release may lag behind `main`. Until a v1.1.0 package is published, use `main` (clone it or download the repository ZIP) for the newest features described in this README.
+
+1. Open [Releases](https://github.com/yo4e/DRAFTED/releases/latest) and download the latest `DRAFTED-v*.zip`, or use `main` for the newest unreleased changes.
 2. Unzip it.
 3. Open `chrome://extensions/` in Chrome.
 4. Turn on **Developer mode**.
