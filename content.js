@@ -33,18 +33,16 @@
       showOverlay("YOU HAVE BEEN DRAFTED", `${message.remaining} KEYSTROKES TO DISCHARGE`);
       showHud(message.remaining);
     } else if (message.type === "SHOW_WARNING") {
-      showOverlay("YOU ARE STILL DRAFTED", `${message.remaining} KEYSTROKES TO DISCHARGE`);
+      showOverlay("YOU ARE STILL DRAFTED", `${message.remaining} KEYSTROKES TO DISCHARGE`, { showEmergencyExit: true });
       showHud(message.remaining);
     } else if (message.type === "UPDATE_REMAINING") {
       showHud(message.remaining);
     } else if (message.type === "DISCHARGED") {
       hideOverlay();
-      removeEmergencyExit();
       dischargeHud();
     } else if (message.type === "SESSION_ENDED") {
       clearTimeout(hudRemoveTimer);
       removeHud();
-      removeEmergencyExit();
       hideOverlay();
     }
   });
@@ -62,47 +60,8 @@
       document.documentElement.appendChild(hud);
       applySavedHudPosition();
     }
-    ensureEmergencyExit();
     hud.classList.remove("is-disappearing");
     hud.textContent = `${remaining} TO DISCHARGE`;
-  }
-
-  function ensureEmergencyExit() {
-    if (emergencyExit) return;
-
-    emergencyExit = document.createElement("button");
-    emergencyExit.id = "drafted-emergency-exit";
-    emergencyExit.type = "button";
-    emergencyExit.setAttribute("aria-label", "Emergency exit — end this drafting session now");
-    emergencyExit.setAttribute("title", "Emergency exit — end this draft now");
-
-    const door = document.createElement("span");
-    door.className = "drafted-exit-door";
-    door.setAttribute("aria-hidden", "true");
-
-    const arrow = document.createElement("span");
-    arrow.className = "drafted-exit-arrow";
-    arrow.setAttribute("aria-hidden", "true");
-    arrow.textContent = "←";
-
-    emergencyExit.append(door, arrow);
-    emergencyExit.addEventListener("click", emergencyEscape);
-    document.documentElement.appendChild(emergencyExit);
-  }
-
-  function emergencyEscape(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    emergencyExit?.setAttribute("disabled", "");
-    chrome.runtime.sendMessage({ type: "EMERGENCY_EXIT" });
-  }
-
-  function removeEmergencyExit() {
-    if (emergencyExit) {
-      emergencyExit.removeEventListener("click", emergencyEscape);
-      emergencyExit.remove();
-    }
-    emergencyExit = undefined;
   }
 
   async function applySavedHudPosition() {
@@ -152,16 +111,20 @@
 
   function placeHud(left, top) {
     if (!hud || !Number.isFinite(left) || !Number.isFinite(top)) return;
+
     const rect = hud.getBoundingClientRect();
     const maxLeft = Math.max(0, window.innerWidth - rect.width);
     const maxTop = Math.max(0, window.innerHeight - rect.height);
     const clampedLeft = Math.min(Math.max(0, left), maxLeft);
     const clampedTop = Math.min(Math.max(0, top), maxTop);
 
-    hud.style.right = "auto";
-    hud.style.bottom = "auto";
-    hud.style.left = `${clampedLeft}px`;
-    hud.style.top = `${clampedTop}px`;
+    // content.css intentionally uses !important to survive hostile page styles.
+    // Use equally strong inline properties so moving the HUD does not leave
+    // both left and right active and stretch the box across the page.
+    hud.style.setProperty("right", "auto", "important");
+    hud.style.setProperty("bottom", "auto", "important");
+    hud.style.setProperty("left", `${clampedLeft}px`, "important");
+    hud.style.setProperty("top", `${clampedTop}px`, "important");
   }
 
   function saveHudPosition() {
@@ -193,12 +156,17 @@
     dragState = undefined;
   }
 
-  function showOverlay(title, subtitle, duration = 1800) {
-    overlay?.remove();
-    clearTimeout(hideTimer);
+  function showOverlay(title, subtitle, { showEmergencyExit = false } = {}) {
+    hideOverlay();
 
     overlay = document.createElement("div");
     overlay.id = "drafted-overlay";
+
+    if (showEmergencyExit) {
+      emergencyExit = createEmergencyExit();
+      overlay.appendChild(emergencyExit);
+    }
+
     const titleNode = document.createElement("div");
     titleNode.className = "drafted-overlay-title";
     titleNode.textContent = title;
@@ -212,12 +180,42 @@
     }
 
     document.documentElement.appendChild(overlay);
-    hideTimer = setTimeout(hideOverlay, duration);
+    hideTimer = setTimeout(hideOverlay, 1800);
+  }
+
+  function createEmergencyExit() {
+    const button = document.createElement("button");
+    button.id = "drafted-emergency-exit";
+    button.type = "button";
+    button.setAttribute("aria-label", "Emergency exit — end this drafting session now");
+    button.setAttribute("title", "Emergency exit — end this draft now");
+
+    const door = document.createElement("span");
+    door.className = "drafted-exit-door";
+    door.setAttribute("aria-hidden", "true");
+
+    const arrow = document.createElement("span");
+    arrow.className = "drafted-exit-arrow";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = "←";
+
+    button.append(door, arrow);
+    button.addEventListener("click", emergencyEscape);
+    return button;
+  }
+
+  function emergencyEscape(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    emergencyExit?.setAttribute("disabled", "");
+    chrome.runtime.sendMessage({ type: "EMERGENCY_EXIT" });
   }
 
   function hideOverlay() {
+    clearTimeout(hideTimer);
+    if (emergencyExit) emergencyExit.removeEventListener("click", emergencyEscape);
     overlay?.remove();
     overlay = undefined;
-    clearTimeout(hideTimer);
+    emergencyExit = undefined;
   }
 })();
