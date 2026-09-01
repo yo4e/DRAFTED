@@ -16,8 +16,8 @@
   justify-content: center !important;
   gap: 18px !important;
   padding: 32px !important;
-  color: #f4f1e8 !important;
-  background: rgba(10, 10, 10, 0.97) !important;
+  color: #ece5c7 !important;
+  background: rgba(40, 46, 31, 0.96) !important;
   text-align: center !important;
   pointer-events: none !important;
 }
@@ -26,25 +26,41 @@
   font-size: clamp(28px, 5vw, 72px) !important;
   font-weight: 900 !important;
   line-height: 1 !important;
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.35) !important;
 }
 
 .drafted-overlay-subtitle {
   font-size: clamp(15px, 2vw, 28px) !important;
   font-weight: 700 !important;
   line-height: 1.2 !important;
+  color: #c1c79a !important;
 }
 
 #drafted-hud {
   position: fixed !important;
   top: 14px !important;
   right: 14px !important;
-  padding: 9px 12px !important;
-  border: 2px solid #f4f1e8 !important;
-  color: #f4f1e8 !important;
-  background: #101010 !important;
+  padding: 10px 13px !important;
+  border: 2px solid #a5ac75 !important;
+  color: #ece5c7 !important;
+  background: #2e3523 !important;
   font-size: 12px !important;
   font-weight: 800 !important;
   line-height: 1 !important;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45) !important;
-  pointer-events: none !important;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35) !important;
+  pointer-events: auto !important;
+  cursor: grab !important;
+  user-select: none !important;
+  touch-action: none !important;
+  transition: opacity 180ms ease, transform 180ms ease !important;
+}
+
+#drafted-hud.is-dragging {
+  cursor: grabbing !important;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35) !important;
+}
+
+#drafted-hud.is-disappearing {
+  opacity: 0 !important;
+  transform: translateY(-6px) !important;
 }
