@@ -6,7 +6,9 @@ DRAFTED is a deliberately small Chrome extension for one problem:
 
 > You can write once you start, but you keep postponing the moment of contact with the manuscript.
 
-Instead of asking the user to schedule a writing session, DRAFTED removes that decision. Once per day, at a random eligible time, it opens a configured document and requires a small amount of physical interaction with it before releasing the tab.
+Instead of asking the user to schedule a writing session, DRAFTED removes that decision. A configurable number of times per day, at random eligible times, it opens a configured document and requires a small amount of physical interaction with it before releasing the tab.
+
+The default is **3 ambushes per day**, each requiring **300 keystrokes**.
 
 The extension must stay playful, local, and intentionally stupid.
 
@@ -19,7 +21,7 @@ The behavioral target is **starting**, not producing.
 ## 2. MVP principles
 
 1. **Ambush, don't remind.**  
-   The activation time is random and hidden from the user.
+   Activation times are random and hidden from the user.
 
 2. **Require contact, not quality.**  
    Progress is measured in keystrokes, not words, characters, or meaningful edits.
@@ -45,6 +47,7 @@ The user configures:
 
 - Target URL
 - Keystroke quota
+- Ambushes per day
 - Excluded time ranges
 - Enabled / disabled state
 
@@ -52,6 +55,7 @@ Defaults:
 
 - Target URL: empty
 - Keystroke quota: `300`
+- Ambushes per day: `3`
 - Excluded ranges: none
 - Enabled: true once a valid URL has been saved
 
@@ -59,43 +63,53 @@ No drafting session is scheduled until a valid target URL exists.
 
 ### 3.2 Daily scheduling
 
-The MVP triggers at most **once per local calendar day**.
+The MVP schedules up to the configured number of ambushes per **local calendar day**. The user-facing setting may be described as “ambushes per day / 24h”; the implementation uses the local calendar day because it is predictable and easy to audit.
 
-The service worker chooses a random future minute that:
+For the default setting, DRAFTED attempts to schedule **3 random ambushes per day**.
 
-- is outside every excluded time range;
-- is later than the current time if scheduling for today;
-- belongs to the user's local time zone.
+For each local day, the service worker chooses random future minutes that:
 
-If no eligible minute remains today, choose a random eligible minute tomorrow.
+- are outside every excluded time range;
+- are later than the current time if scheduling for today;
+- belong to the user's local time zone;
+- are unique within the day's schedule.
 
-The exact scheduled time should not be shown in the UI. The UI may simply say `ARMED`.
+The exact scheduled times must not be shown in the UI. The UI may simply say `ARMED` and show the configured daily count.
 
-Whenever Chrome starts, settings change, or an alarm fires in an invalid time range, recalculate the next eligible random activation.
+Whenever Chrome starts or settings change:
 
-If Chrome was closed when an old alarm should have fired, do not immediately fire a stale ambush on startup. Recalculate from the current time instead.
+1. discard stale pending times that have already passed;
+2. keep the number of ambushes already started today;
+3. calculate how many ambushes remain for today's configured quota;
+4. schedule that many random eligible future minutes if possible.
+
+If no eligible minute remains today, do not fire stale ambushes immediately and do not stack them onto tomorrow. Tomorrow starts with a fresh daily quota.
+
+If an alarm fires while a drafting session is already active, do not open another drafted tab. DRAFTED never stacks simultaneous coercive sessions. The overlapping alarm is skipped.
+
+At local midnight, reset the daily schedule and create a fresh set of random times for the new day.
 
 ### 3.3 Drafting session
 
-When the alarm fires:
+When an alarm fires:
 
 1. Create a new tab containing the configured target URL.
 2. Record the tab ID and window ID as the active drafting session.
-3. Inject the DRAFTED content script once the page is available.
-4. Show a temporary full-page visual overlay:
+3. Increment today's started-ambush count.
+4. Inject the DRAFTED content script once the page is available.
+5. Show a temporary full-page visual overlay:
 
    **YOU HAVE BEEN DRAFTED**  
    **{quota} KEYSTROKES TO DISCHARGE**
 
-5. After the intro, retain a small non-blocking HUD showing remaining keystrokes.
-6. Count qualifying `keydown` events.
-7. When remaining keystrokes reach zero:
+6. After the intro, retain a small non-blocking HUD showing remaining keystrokes.
+7. Count qualifying `keydown` events.
+8. When remaining keystrokes reach zero:
    - mark the session complete;
    - stop redirecting tab changes;
    - remove the HUD;
    - show `DISCHARGED.` briefly;
-   - mark today as completed;
-   - schedule the next eligible day.
+   - return to the armed state for any later ambushes already scheduled that day.
 
 ---
 
@@ -195,16 +209,23 @@ Persistent settings and daily scheduling metadata:
     enabled: true,
     targetUrl: "https://docs.google.com/...",
     keystrokeQuota: 300,
+    ambushesPerDay: 3,
     excludedRanges: [
       { start: "06:00", end: "14:00" },
       { start: "23:00", end: "07:00" }
     ]
   },
-  lastDraftDate: "2026-09-01"
+  dailyState: {
+    date: "2026-09-01",
+    started: 1,
+    pendingTimes: [1788259200000, 1788273600000]
+  }
 }
 ```
 
 Excluded ranges must support crossing midnight.
+
+`dailyState` is replaced when the local calendar day changes. Pending times that are already stale are discarded and may be re-randomized into the remaining eligible minutes for that same day.
 
 ### `chrome.storage.session`
 
@@ -226,7 +247,7 @@ Current live session only:
 
 Using session storage means quitting Chrome ends the coercive session. That is intentional.
 
-`lastDraftDate` should be written when an ambush begins so restarting Chrome does not immediately trigger another ambush the same day.
+The persistent daily counter prevents a Chrome restart from resetting the day's ambush quota back to zero.
 
 ---
 
@@ -245,6 +266,12 @@ Keep settings to one simple page.
 - default `300`
 - suggested bounds: `1`–`10000`
 
+**Ambushes per day**
+- `<input type="number">`
+- default `3`
+- suggested bounds: `1`–`24`
+- means the number of random drafting activations attempted per local calendar day
+
 **Excluded hours**
 - repeatable rows containing `start` and `end` time inputs
 - add/remove range buttons
@@ -262,7 +289,7 @@ Display only a coarse state:
 - `ARMED`
 - `DRAFTED`
 
-Do not reveal the random activation time.
+Do not reveal the random activation times.
 
 Optional but useful for development: a `TEST DRAFT NOW` button. Keep it visually secondary and clearly marked as a test control.
 
@@ -345,10 +372,13 @@ Responsibilities:
 
 - validate settings;
 - calculate allowed minutes from excluded ranges;
+- generate the configured number of random daily ambush times;
 - create and clear `chrome.alarms`;
+- reconcile stale/missed alarms on startup;
 - handle `runtime.onInstalled`;
 - handle `runtime.onStartup`;
 - start a drafting session;
+- prevent simultaneous stacked drafting sessions;
 - inject content script;
 - hold the central keystroke count;
 - receive generic `keystroke` messages;
@@ -356,7 +386,7 @@ Responsibilities:
 - reactivate drafted tab on attempted tab escape;
 - reopen a prematurely closed drafted tab;
 - complete/discharge session;
-- schedule the next session.
+- maintain the local-day started count and pending schedule.
 
 The content script should remain disposable. Reloading the page must not reset progress because the numeric state lives in the service worker/session storage.
 
@@ -364,36 +394,60 @@ The content script should remain disposable. Reloading the page must not reset p
 
 ## 12. Scheduling algorithm
 
-A simple implementation is sufficient.
+A simple local-calendar-day implementation is sufficient.
 
 Pseudo-code:
 
 ```text
-scheduleNextDraft():
-  clear existing DRAFTED alarm
-
+reconcileTodaySchedule():
   if disabled or target URL missing:
+    clear DRAFTED alarms
     return
 
-  if lastDraftDate == today:
-    date = tomorrow
-  else:
-    date = today
+  if dailyState.date != today:
+    dailyState = { date: today, started: 0, pendingTimes: [] }
 
-  loop:
-    eligibleMinutes = all minutes on date
-                      minus excluded ranges
-                      minus minutes before now when date == today
+  discard pendingTimes before now
+  clear/rebuild future DRAFTED alarms from current state
 
-    if eligibleMinutes is not empty:
-      chosen = random(eligibleMinutes)
-      create alarm at chosen
-      return
+  remaining = ambushesPerDay - dailyState.started - pendingTimes.length
 
-    date = date + 1 day
+  if remaining <= 0:
+    return
+
+  eligibleMinutes = all future minutes today
+                    minus excluded ranges
+                    minus already-selected pending minutes
+
+  choose up to `remaining` unique random minutes
+  add them to pendingTimes
+  create one named chrome alarm for each time
 ```
 
-When the alarm fires, re-check that the current local time is still permitted. If settings changed or the time is now excluded, reschedule instead of drafting.
+When an ambush alarm fires:
+
+```text
+onAmbushAlarm(time):
+  remove time from pendingTimes
+
+  if disabled or target URL missing:
+    reconcileTodaySchedule()
+    return
+
+  if current local time is excluded:
+    reconcileTodaySchedule()
+    return
+
+  if activeSession exists:
+    // never stack drafting sessions
+    reconcileTodaySchedule()
+    return
+
+  dailyState.started += 1
+  startDraftingSession()
+```
+
+When Chrome starts, do not immediately fire missed ambushes. Re-randomize any remaining daily quota into the eligible time still left today.
 
 Minute-level randomness is enough for v1.
 
@@ -430,10 +484,12 @@ DRAFTED
     │ quota reached
     ▼
 DISCHARGED
-    │ schedule next eligible day
+    │ later random alarm, if daily quota remains
     ▼
-ARMED
+ARMED / DRAFTED
 ```
+
+After the final ambush of the day, DRAFTED remains armed but has no more same-day activations scheduled. A new daily schedule is generated after the local date changes.
 
 `DISARMED` is an explicit user setting and can be entered from any non-active state.
 
@@ -500,9 +556,9 @@ The repository should be auditable by an ordinary developer.
 Do not implement unless the MVP proves useful:
 
 - multiple manuscript URLs;
-- multiple ambushes per day;
-- weekly schedules;
-- different quotas by day;
+- different daily schedules by weekday;
+- different quotas by time of day;
+- minimum spacing rules between ambushes;
 - streaks or achievements;
 - word counting;
 - character counting;
@@ -523,19 +579,21 @@ Do not implement unless the MVP proves useful:
 The MVP is done when all of the following are true:
 
 1. A user can install the extension with **Load unpacked** from a GitHub download.
-2. A user can save a Google Docs URL, keystroke quota, and multiple excluded ranges.
-3. The extension schedules one random activation outside excluded hours.
-4. The target document opens automatically when activated.
-5. The exact intro text is displayed with the configured quota.
-6. Pressing Space repeatedly can legally complete the quota.
-7. The quota survives target-page reloads and drafted-tab reopening during the same Chrome session.
-8. Switching to another tab before discharge returns the user to the drafted tab.
-9. Closing the drafted tab before discharge reopens it without resetting progress.
-10. Reaching the quota releases tab enforcement and displays `DISCHARGED.`
-11. The extension never stores or transmits the contents of pressed keys or the manuscript.
-12. Excluded hours are respected even after Chrome restart or settings changes.
-13. Google Docs works in a real manual test.
-14. The repository includes clear manual installation instructions and the MIT license.
+2. A user can save a Google Docs URL, keystroke quota, ambushes-per-day count, and multiple excluded ranges.
+3. The default settings are 300 keystrokes and 3 ambushes per day.
+4. The extension schedules the configured number of random activations outside excluded hours when enough eligible time remains.
+5. The target document opens automatically when activated.
+6. The exact intro text is displayed with the configured quota.
+7. Pressing Space repeatedly can legally complete the quota.
+8. The quota survives target-page reloads and drafted-tab reopening during the same Chrome session.
+9. Switching to another tab before discharge returns the user to the drafted tab.
+10. Closing the drafted tab before discharge reopens it without resetting progress.
+11. Reaching the quota releases tab enforcement and displays `DISCHARGED.`
+12. The extension never stores or transmits the contents of pressed keys or the manuscript.
+13. Excluded hours are respected even after Chrome restart or settings changes.
+14. Multiple drafting sessions never stack at the same time.
+15. Google Docs works in a real manual test.
+16. The repository includes clear manual installation instructions and the MIT license.
 
 ---
 
@@ -549,9 +607,10 @@ The MVP is done when all of the following are true:
 6. tab-switch return behavior
 7. drafted-tab reopen behavior
 8. excluded-range parser
-9. random daily alarm scheduling
-10. optional host permission flow
-11. Google Docs compatibility hardening
-12. installation documentation cleanup
+9. configurable multi-ambush daily scheduling
+10. startup/missed-alarm reconciliation
+11. optional host permission flow
+12. Google Docs compatibility hardening
+13. installation documentation cleanup
 
 Build the coercive loop before polishing the scheduler. If the core joke is not fun in manual testing, do not add infrastructure around it.
