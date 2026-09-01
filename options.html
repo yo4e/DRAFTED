@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DRAFTED — Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <p class="eyebrow">DRAFTED / CONFIGURATION OFFICE</p>
+      <h1>YOU MAY BE DRAFTED.</h1>
+      <p class="lede">Configure the manuscript. The schedule remains classified.</p>
+    </header>
+
+    <section class="status-panel" aria-live="polite">
+      <span>STATUS</span>
+      <strong id="status">UNCONFIGURED</strong>
+    </section>
+
+    <form id="settings-form">
+      <label class="field">
+        <span>Target URL</span>
+        <input id="target-url" type="url" inputmode="url" placeholder="https://docs.google.com/document/d/..." required>
+      </label>
+
+      <div class="grid-two">
+        <label class="field">
+          <span>Keystrokes to discharge</span>
+          <input id="quota" type="number" min="1" max="10000" step="1" value="300" required>
+        </label>
+        <label class="field">
+          <span>Ambushes per day</span>
+          <input id="ambushes" type="number" min="1" max="24" step="1" value="3" required>
+        </label>
+      </div>
+
+      <fieldset>
+        <legend>Excluded hours</legend>
+        <p class="hint">DRAFTED will never activate inside these local-time ranges. Overnight ranges are allowed.</p>
+        <div id="excluded-ranges"></div>
+        <button class="secondary" id="add-range" type="button">+ ADD EXCLUDED RANGE</button>
+      </fieldset>
+
+      <label class="toggle-row">
+        <input id="enabled" type="checkbox">
+        <span>ARM DRAFTED</span>
+      </label>
+
+      <div class="actions">
+        <button type="submit">SAVE ORDERS</button>
+        <button class="secondary" id="test-now" type="button">TEST DRAFT NOW</button>
+      </div>
+      <p id="message" class="message" role="status"></p>
+    </form>
+  </main>
+
+  <template id="range-template">
+    <div class="range-row">
+      <label><span>From</span><input class="range-start" type="time" required></label>
+      <label><span>To</span><input class="range-end" type="time" required></label>
+      <button class="danger remove-range" type="button" aria-label="Remove excluded range">REMOVE</button>
+    </div>
+  </template>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>
