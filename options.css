@@ -67,3 +67,37 @@ button:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 #596040; 
   .weekday-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .range-row .danger, .url-row .danger { justify-self: start; }
 }
+
+.field-manual {
+  margin-top: 34px;
+  padding: 18px;
+  border: 2px solid #6d7350;
+  background: rgba(255,255,255,0.2);
+  color: #3f442e;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.field-manual strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #2e321f;
+  letter-spacing: .09em;
+}
+.field-manual ol { margin: 0; padding-left: 22px; }
+.field-manual li + li { margin-top: 5px; }
+
+.safety-note {
+  margin-top: 36px;
+  padding-top: 16px;
+  border-top: 1px solid #6d7350;
+  color: #50563a;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.safety-note strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #383d29;
+  letter-spacing: .09em;
+}
+.safety-note p { margin: 0; max-width: 64ch; }
