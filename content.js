@@ -12,6 +12,7 @@
   let overlay;
   let hideTimer;
   let hudRemoveTimer;
+  let emergencyExit;
   let dragState;
 
   window.addEventListener("keydown", (event) => {
@@ -38,10 +39,12 @@
       showHud(message.remaining);
     } else if (message.type === "DISCHARGED") {
       hideOverlay();
+      removeEmergencyExit();
       dischargeHud();
     } else if (message.type === "SESSION_ENDED") {
       clearTimeout(hudRemoveTimer);
       removeHud();
+      removeEmergencyExit();
       hideOverlay();
     }
   });
@@ -59,8 +62,47 @@
       document.documentElement.appendChild(hud);
       applySavedHudPosition();
     }
+    ensureEmergencyExit();
     hud.classList.remove("is-disappearing");
     hud.textContent = `${remaining} TO DISCHARGE`;
+  }
+
+  function ensureEmergencyExit() {
+    if (emergencyExit) return;
+
+    emergencyExit = document.createElement("button");
+    emergencyExit.id = "drafted-emergency-exit";
+    emergencyExit.type = "button";
+    emergencyExit.setAttribute("aria-label", "Emergency exit — end this drafting session now");
+    emergencyExit.setAttribute("title", "Emergency exit — end this draft now");
+
+    const door = document.createElement("span");
+    door.className = "drafted-exit-door";
+    door.setAttribute("aria-hidden", "true");
+
+    const arrow = document.createElement("span");
+    arrow.className = "drafted-exit-arrow";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = "←";
+
+    emergencyExit.append(door, arrow);
+    emergencyExit.addEventListener("click", emergencyEscape);
+    document.documentElement.appendChild(emergencyExit);
+  }
+
+  function emergencyEscape(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    emergencyExit?.setAttribute("disabled", "");
+    chrome.runtime.sendMessage({ type: "EMERGENCY_EXIT" });
+  }
+
+  function removeEmergencyExit() {
+    if (emergencyExit) {
+      emergencyExit.removeEventListener("click", emergencyEscape);
+      emergencyExit.remove();
+    }
+    emergencyExit = undefined;
   }
 
   async function applySavedHudPosition() {
