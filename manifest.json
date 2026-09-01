@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "DRAFTED",
+  "version": "0.1.0",
+  "description": "A playful writing commitment device: make contact with the manuscript before discharge.",
+  "permissions": ["storage", "alarms", "scripting", "tabs"],
+  "optional_host_permissions": ["https://*/*", "http://*/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "options_page": "options.html",
+  "action": {
+    "default_title": "DRAFTED settings"
+  }
+}
