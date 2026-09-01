@@ -57,17 +57,21 @@ Closing Chrome, using another browser/window, or disabling the extension remains
 
 DRAFTED is designed for local installation and will **not** be published to the Chrome Web Store.
 
-1. Download this repository as a ZIP, or clone it with Git.
-2. Unzip it if necessary.
+Recommended installation:
+
+1. Open [Releases](https://github.com/yo4e/DRAFTED/releases/latest) and download `DRAFTED-v1.0.0.zip`.
+2. Unzip it.
 3. Open `chrome://extensions/` in Chrome.
 4. Turn on **Developer mode**.
 5. Click **Load unpacked**.
-6. Select the DRAFTED repository directory (the directory containing `manifest.json`).
+6. Select the extracted `DRAFTED-v1.0.0` directory (the directory containing `manifest.json`).
 7. Chrome opens DRAFTED's settings page on first install.
 8. Configure a target URL, quota, ambushes per day, excluded hours, then enable **ARM DRAFTED** and save.
 9. Approve host access for the configured target origin when Chrome asks.
 
-Updates are manual: download or pull a newer version and click **Reload** on the extension card in `chrome://extensions/`.
+Developers can alternatively clone the repository and load the repository directory directly.
+
+Updates are manual: download a newer release, replace the extracted files, and click **Reload** on the extension card in `chrome://extensions/`.
 
 The settings page includes **TEST DRAFT NOW**, which starts a session immediately without consuming one of the day's scheduled ambushes.
 

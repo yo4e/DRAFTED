@@ -1,0 +1,48 @@
+name: Release v1.0.0
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/release-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build Chrome extension ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_name="DRAFTED-v1.0.0"
+          mkdir -p "dist/${release_name}/lib"
+          cp manifest.json background.js content.js content.css options.html options.js options.css "dist/${release_name}/"
+          cp lib/core.js "dist/${release_name}/lib/core.js"
+          cd dist
+          zip -r "${release_name}.zip" "${release_name}"
+
+      - name: Create GitHub Release and upload ZIP
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v1.0.0"
+          asset="dist/DRAFTED-v1.0.0.zip"
+
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" \
+              --target "$GITHUB_SHA" \
+              --title "DRAFTED v1.0.0" \
+              --notes "First DRAFTED MVP release. Download DRAFTED-v1.0.0.zip, extract it, then load the extracted DRAFTED-v1.0.0 folder from chrome://extensions/ with Developer mode enabled."
+          fi
+
+          gh release upload "$tag" "$asset" --clobber
