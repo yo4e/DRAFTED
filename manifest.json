@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DRAFTED",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "description": "A playful writing commitment device: make contact with the manuscript before discharge.",
   "permissions": ["storage", "alarms", "scripting", "tabs"],
   "optional_host_permissions": ["https://*/*", "http://*/*"],
@@ -11,6 +11,16 @@
   },
   "options_page": "options.html",
   "action": {
-    "default_title": "DRAFTED settings"
+    "default_title": "DRAFTED settings",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   }
 }
