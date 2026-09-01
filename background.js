@@ -66,6 +66,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "EMERGENCY_EXIT") {
+    endCurrentSession(sender).catch(console.error);
+    return undefined;
+  }
+
   return undefined;
 });
 
@@ -117,6 +122,15 @@ async function reconcileAfterSettingsChange() {
     await setActiveSession({ ...session, allowedUrls: settings.allowedUrls });
   }
   await reconcileTodaySchedule();
+}
+
+async function endCurrentSession(sender) {
+  if (!sender.tab?.id) return;
+  const session = await getActiveSession();
+  if (!session || sender.tab.id !== session.tabId) return;
+
+  await chrome.storage.session.remove("activeSession");
+  await safeSendToTab(session.tabId, { type: "SESSION_ENDED" });
 }
 
 async function startTestDraft() {
