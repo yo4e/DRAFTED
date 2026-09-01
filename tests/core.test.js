@@ -2,9 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   eligibleFutureMinutesToday,
+  isDateActive,
   isMinuteExcluded,
   isQualifyingKeydown,
   localDateKey,
+  matchesAllowedUrl,
   normalizeSettings,
   selectRandomUnique,
   toOriginPattern,
@@ -14,6 +16,8 @@ test("defaults and bounds are normalized", () => {
   assert.deepEqual(normalizeSettings({}), {
     enabled: false,
     targetUrl: "",
+    allowedUrls: [],
+    activeDays: [0, 1, 2, 3, 4, 5, 6],
     keystrokeQuota: 300,
     ambushesPerDay: 3,
     excludedRanges: [],
@@ -26,6 +30,35 @@ test("enabled is only retained for a valid http(s) target", () => {
   assert.equal(normalizeSettings({ enabled: true, targetUrl: "javascript:alert(1)" }).enabled, false);
   assert.equal(normalizeSettings({ enabled: true, targetUrl: "https://docs.google.com/document/d/abc/edit" }).enabled, true);
   assert.equal(toOriginPattern("https://docs.google.com/document/d/abc/edit"), "https://docs.google.com/*");
+});
+
+test("allowed URLs are normalized, deduplicated, and hash-agnostic", () => {
+  assert.deepEqual(normalizeSettings({
+    allowedUrls: [
+      " https://example.com/plot#part-1 ",
+      "https://example.com/plot#part-2",
+      "notaurl",
+      "",
+    ],
+  }).allowedUrls, ["https://example.com/plot"]);
+});
+
+test("allowed URL matching supports exact pages and child paths while ignoring query/hash noise", () => {
+  assert.equal(matchesAllowedUrl("https://example.com/plot", ["https://example.com/plot"]), true);
+  assert.equal(matchesAllowedUrl("https://example.com/plot/chapter-2", ["https://example.com/plot"]), true);
+  assert.equal(matchesAllowedUrl("https://example.com/plot?mode=outline", ["https://example.com/plot"]), true);
+  assert.equal(matchesAllowedUrl("https://example.com/plot?mode=outline", ["https://example.com/plot?mode=outline"]), true);
+  assert.equal(matchesAllowedUrl("https://example.com/plot?mode=draft#scene-4", ["https://example.com/plot?mode=outline"]), true);
+  assert.equal(matchesAllowedUrl("https://example.com/plot-twist", ["https://example.com/plot"]), false);
+  assert.equal(matchesAllowedUrl("https://elsewhere.com/plot", ["https://example.com/plot"]), false);
+});
+
+test("active days default to every day and can disable weekends", () => {
+  assert.deepEqual(normalizeSettings({ activeDays: [1, 2, 3, 4, 5] }).activeDays, [1, 2, 3, 4, 5]);
+  assert.equal(isDateActive(new Date(2026, 8, 5), [1, 2, 3, 4, 5]), false);
+  assert.equal(isDateActive(new Date(2026, 8, 7), [1, 2, 3, 4, 5]), true);
+  assert.equal(isDateActive(new Date(2026, 8, 7), []), false);
+  assert.deepEqual(eligibleFutureMinutesToday(new Date(2026, 8, 5, 12, 0), [], [1, 2, 3, 4, 5]), []);
 });
 
 test("excluded ranges support normal, overnight, and full-day ranges", () => {

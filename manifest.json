@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "DRAFTED",
-  "version": "0.1.0",
-  "description": "A playful writing commitment device: make contact with the manuscript before discharge.",
+  "version": "1.1.0",
+  "description": "Opens your writing document at random times and keeps you there until you hit a keystroke quota. Configure safe hours, active days, reference URLs, and an emergency exit.",
   "permissions": ["storage", "alarms", "scripting", "tabs"],
   "optional_host_permissions": ["https://*/*", "http://*/*"],
   "background": {
@@ -11,6 +11,16 @@
   },
   "options_page": "options.html",
   "action": {
-    "default_title": "DRAFTED settings"
+    "default_title": "DRAFTED settings",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   }
 }

@@ -1,9 +1,11 @@
 import {
   DEFAULT_SETTINGS,
   eligibleFutureMinutesToday,
+  isDateActive,
   isDateExcluded,
   isValidTargetUrl,
   localDateKey,
+  matchesAllowedUrl,
   nextLocalMidnight,
   normalizeSettings,
   selectRandomUnique,
@@ -64,6 +66,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "EMERGENCY_EXIT") {
+    endCurrentSession(sender).catch(console.error);
+    return undefined;
+  }
+
   return undefined;
 });
 
@@ -72,6 +79,8 @@ chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
   if (!session || windowId !== session.windowId || tabId === session.tabId) return;
 
   try {
+    const tab = await chrome.tabs.get(tabId);
+    if (matchesAllowedUrl(tab.url ?? "", session.allowedUrls ?? [])) return;
     await chrome.tabs.update(session.tabId, { active: true });
     await safeSendToTab(session.tabId, { type: "SHOW_WARNING", remaining: session.remaining });
   } catch (error) {
@@ -109,8 +118,19 @@ async function reconcileAfterSettingsChange() {
   if (session && (!settings.enabled || settings.targetUrl !== session.targetUrl)) {
     await chrome.storage.session.remove("activeSession");
     await safeSendToTab(session.tabId, { type: "SESSION_ENDED" });
+  } else if (session) {
+    await setActiveSession({ ...session, allowedUrls: settings.allowedUrls });
   }
   await reconcileTodaySchedule();
+}
+
+async function endCurrentSession(sender) {
+  if (!sender.tab?.id) return;
+  const session = await getActiveSession();
+  if (!session || sender.tab.id !== session.tabId) return;
+
+  await chrome.storage.session.remove("activeSession");
+  await safeSendToTab(session.tabId, { type: "SESSION_ENDED" });
 }
 
 async function startTestDraft() {
@@ -132,7 +152,7 @@ async function handleAmbushAlarm(alarm) {
   dailyState.pendingTimes = dailyState.pendingTimes.filter((time) => time !== alarmTime);
   await chrome.storage.local.set({ dailyState });
 
-  if (!settings.enabled || !isValidTargetUrl(settings.targetUrl) || isDateExcluded(new Date(), settings.excludedRanges)) {
+  if (!settings.enabled || !isValidTargetUrl(settings.targetUrl) || !isDateActive(new Date(), settings.activeDays) || isDateExcluded(new Date(), settings.excludedRanges)) {
     await reconcileTodaySchedule();
     return;
   }
@@ -155,6 +175,7 @@ async function startDraftingSession(settings) {
     tabId: tab.id,
     windowId: tab.windowId,
     targetUrl: settings.targetUrl,
+    allowedUrls: settings.allowedUrls,
     quota: settings.keystrokeQuota,
     count: 0,
     remaining: settings.keystrokeQuota,
@@ -219,7 +240,7 @@ async function reconcileTodaySchedule({ forceNewDay = false } = {}) {
   await clearAmbushAlarms();
   await scheduleMidnightAlarm(now);
 
-  if (!settings.enabled || !isValidTargetUrl(settings.targetUrl)) {
+  if (!settings.enabled || !isValidTargetUrl(settings.targetUrl) || !isDateActive(now, settings.activeDays)) {
     dailyState.pendingTimes = [];
     await chrome.storage.local.set({ dailyState });
     return;
@@ -228,7 +249,7 @@ async function reconcileTodaySchedule({ forceNewDay = false } = {}) {
   const remainingNeeded = Math.max(0, settings.ambushesPerDay - dailyState.started - dailyState.pendingTimes.length);
   if (remainingNeeded > 0) {
     const existing = new Set(dailyState.pendingTimes);
-    const candidates = eligibleFutureMinutesToday(now, settings.excludedRanges).filter((time) => !existing.has(time));
+    const candidates = eligibleFutureMinutesToday(now, settings.excludedRanges, settings.activeDays).filter((time) => !existing.has(time));
     dailyState.pendingTimes.push(...selectRandomUnique(candidates, remainingNeeded));
     dailyState.pendingTimes.sort((a, b) => a - b);
   }

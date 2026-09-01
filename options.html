@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DRAFTED — Settings</title>
+  <link rel="icon" href="icons/icon48.png">
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
@@ -24,6 +25,27 @@
         <span>Target URL</span>
         <input id="target-url" type="url" inputmode="url" placeholder="https://docs.google.com/document/d/..." required>
       </label>
+
+      <fieldset>
+        <legend>Allowed reference URLs</legend>
+        <p class="hint">During an active draft, DRAFTED will not drag you back if you switch to one of these pages. Use this for plot docs, notes, setting references, timelines, or research pages.</p>
+        <div id="allowed-urls"></div>
+        <button class="secondary" id="add-allowed-url" type="button">+ ADD ALLOWED URL</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>Active days</legend>
+        <p class="hint">Choose the days DRAFTED may schedule ambushes. Manual test drafts still work on inactive days.</p>
+        <div class="weekday-grid" id="active-days">
+          <label><input type="checkbox" data-day="1"><span>MON</span></label>
+          <label><input type="checkbox" data-day="2"><span>TUE</span></label>
+          <label><input type="checkbox" data-day="3"><span>WED</span></label>
+          <label><input type="checkbox" data-day="4"><span>THU</span></label>
+          <label><input type="checkbox" data-day="5"><span>FRI</span></label>
+          <label><input type="checkbox" data-day="6"><span>SAT</span></label>
+          <label><input type="checkbox" data-day="0"><span>SUN</span></label>
+        </div>
+      </fieldset>
 
       <div class="grid-two">
         <label class="field">
@@ -54,6 +76,23 @@
       </div>
       <p id="message" class="message" role="status"></p>
     </form>
+
+    <section class="field-manual" aria-label="How to use DRAFTED">
+      <strong>FIELD MANUAL / HOW TO USE</strong>
+      <ol>
+        <li>Set the manuscript or writing page as <b>Target URL</b>.</li>
+        <li>Add plot notes, research pages, or other safe tabs under <b>Allowed reference URLs</b>.</li>
+        <li>Choose the weekdays and hours when ambushes are permitted, then set the daily count and keystroke quota.</li>
+        <li>Turn on <b>ARM DRAFTED</b> and save. DRAFTED schedules hidden random ambushes for eligible times.</li>
+        <li>When drafted, type until the HUD reaches zero. Drag the HUD if it covers something important.</li>
+        <li>Use <b>TEST DRAFT NOW</b> whenever you want to verify your setup without consuming a scheduled ambush.</li>
+      </ol>
+    </section>
+
+    <section class="safety-note" aria-label="Emergency exit information">
+      <strong>EMERGENCY EXIT</strong>
+      <p>A tiny exit control is always available at the upper-left during a draft. It immediately ends the current session. DRAFTED stays armed for later scheduled ambushes.</p>
+    </section>
   </main>
 
   <template id="range-template">
@@ -61,6 +100,16 @@
       <label><span>From</span><input class="range-start" type="time" required></label>
       <label><span>To</span><input class="range-end" type="time" required></label>
       <button class="danger remove-range" type="button" aria-label="Remove excluded range">REMOVE</button>
+    </div>
+  </template>
+
+  <template id="allowed-url-template">
+    <div class="url-row">
+      <label>
+        <span>URL</span>
+        <input class="allowed-url" type="url" inputmode="url" placeholder="https://example.com/...">
+      </label>
+      <button class="danger remove-allowed-url" type="button" aria-label="Remove allowed URL">REMOVE</button>
     </div>
   </template>
 
