@@ -11,7 +11,6 @@ import {
 
 const AMBUSH_PREFIX = "drafted:ambush:";
 const MIDNIGHT_ALARM = "drafted:midnight";
-let correctiveActivation = false;
 let reopenInProgress = false;
 let keystrokeChain = Promise.resolve();
 
@@ -69,18 +68,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
-  if (correctiveActivation) return;
   const session = await getActiveSession();
   if (!session || windowId !== session.windowId || tabId === session.tabId) return;
 
-  correctiveActivation = true;
   try {
     await chrome.tabs.update(session.tabId, { active: true });
     await safeSendToTab(session.tabId, { type: "SHOW_WARNING", remaining: session.remaining });
   } catch (error) {
     console.warn("DRAFTED could not reactivate drafted tab", error);
-  } finally {
-    setTimeout(() => { correctiveActivation = false; }, 100);
   }
 });
 
