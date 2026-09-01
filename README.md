@@ -5,7 +5,7 @@
 
 DRAFTED is a tiny Chrome extension that ambushes you with the document you have been avoiding.
 
-At random times outside your excluded hours, DRAFTED opens your configured writing URL. Until you reach your keystroke quota, switching to another tab in that Chrome window sends you straight back.
+At random times outside your excluded hours and inactive weekdays, DRAFTED opens your configured writing URL. Until you reach your keystroke quota, switching to another tab in that Chrome window sends you straight back — unless the destination matches one of your allowed reference URLs.
 
 It does **not** care whether the writing is good. It does **not** even care whether you write meaningful text. If necessary, hit the space bar 300 times and earn your discharge.
 
@@ -13,14 +13,16 @@ The point is not productivity. The point is contact.
 
 ## MVP
 
-DRAFTED has four essential settings:
+DRAFTED has six essential settings:
 
 - **Target URL** — the document to open, such as a Google Docs manuscript
+- **Allowed reference URLs** — optional plot, notes, setting, timeline, or research pages that remain reachable during a draft
+- **Active days** — choose which weekdays may schedule ambushes; all seven are enabled by default
 - **Keystroke quota** — default: `300`
 - **Ambushes per day** — default: `3`
 - **Excluded hours** — one or more daily time ranges during which DRAFTED must never activate
 
-The MVP schedules the configured number of ambushes at random eligible times each local calendar day. With the defaults, you can expect three surprise visits per day, each requiring 300 keystrokes to discharge.
+The MVP schedules the configured number of ambushes at random eligible times on each enabled local calendar day. With the defaults, you can expect three surprise visits per day, each requiring 300 keystrokes to discharge.
 
 When activated:
 
@@ -31,12 +33,10 @@ When activated:
    **300 KEYSTROKES TO DISCHARGE**
 
 3. Every non-modifier keydown counts as one keystroke. Holding a key down does not auto-farm the counter.
-4. A small HUD shows the remaining count.
-5. If you switch to another tab in the drafted Chrome window before reaching the quota, DRAFTED immediately returns you to the manuscript tab and shows the warning again.
+4. A small HUD shows the remaining count. Drag the HUD anywhere on the page; its position is remembered.
+5. If you switch to another tab in the drafted Chrome window before reaching the quota, DRAFTED immediately returns you to the manuscript tab unless that tab matches an allowed reference URL.
 6. If you close the drafted tab, DRAFTED reopens it and preserves the current count.
-7. At zero, the lock is released and DRAFTED displays:
-
-   **DISCHARGED.**
+7. At zero, the HUD briefly reads `DISCHARGED.` and then quietly fades away, leaving you in the manuscript if you want to keep writing.
 
 Spaces count. Backspace counts. Arrow keys count. DRAFTED is intentionally not interested in judging what you wrote.
 
@@ -59,21 +59,21 @@ DRAFTED is designed for local installation and will **not** be published to the 
 
 Recommended installation:
 
-1. Open [Releases](https://github.com/yo4e/DRAFTED/releases/latest) and download `DRAFTED-v1.0.0.zip`.
+1. Open [Releases](https://github.com/yo4e/DRAFTED/releases/latest) and download the latest `DRAFTED-v*.zip`.
 2. Unzip it.
 3. Open `chrome://extensions/` in Chrome.
 4. Turn on **Developer mode**.
 5. Click **Load unpacked**.
-6. Select the extracted `DRAFTED-v1.0.0` directory (the directory containing `manifest.json`).
+6. Select the extracted DRAFTED directory (the directory containing `manifest.json`).
 7. Chrome opens DRAFTED's settings page on first install.
-8. Configure a target URL, quota, ambushes per day, excluded hours, then enable **ARM DRAFTED** and save.
+8. Configure a target URL, optional allowed reference URLs, active days, quota, ambushes per day, and excluded hours, then enable **ARM DRAFTED** and save.
 9. Approve host access for the configured target origin when Chrome asks.
 
 Developers can alternatively clone the repository and load the repository directory directly.
 
 Updates are manual: download a newer release, replace the extracted files, and click **Reload** on the extension card in `chrome://extensions/`.
 
-The settings page includes **TEST DRAFT NOW**, which starts a session immediately without consuming one of the day's scheduled ambushes.
+The settings page includes **TEST DRAFT NOW**, which starts a session immediately without consuming one of the day's scheduled ambushes. Manual tests work even on inactive weekdays.
 
 ## Privacy
 
@@ -87,7 +87,7 @@ DRAFTED stays local-first and boring:
 - no document-content collection
 - no storage of individual keys pressed
 
-Only settings, scheduling state, and numeric progress are stored locally in Chrome. Live drafting progress uses `chrome.storage.session`, so quitting Chrome intentionally ends the coercive session.
+Only settings, scheduling state, numeric progress, and the HUD position are stored locally in Chrome. Live drafting progress uses `chrome.storage.session`, so quitting Chrome intentionally ends the coercive session.
 
 ## Development
 
@@ -101,7 +101,7 @@ A real Google Docs document still requires manual verification because browser p
 
 ## Design
 
-See [`DESIGN.md`](./DESIGN.md) for the MVP technical design and acceptance criteria.
+See [`DESIGN.md`](./DESIGN.md) for the original MVP technical design and acceptance criteria. The current implementation also includes allowed reference URLs, selectable active weekdays, a draggable HUD, quiet discharge behavior, and military-inspired visual styling added after initial hands-on testing.
 
 ## License
 
