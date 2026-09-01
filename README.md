@@ -18,7 +18,7 @@ The point is not productivity. The point is contact.
 3. Choose active weekdays, excluded hours, ambushes per day, and the keystroke quota.
 4. Turn on **ARM DRAFTED** and save. Random activation times stay hidden.
 5. When drafted, type until the HUD reaches zero. You can drag the HUD anywhere and DRAFTED remembers its position.
-6. If something genuinely urgent happens, use the tiny emergency-exit icon at the upper-left to end only the current session.
+6. If something genuinely urgent happens, try to leave the manuscript: the `YOU ARE STILL DRAFTED` warning includes a tiny emergency-exit icon at its upper-left. Use it to end only the current session.
 
 Use **TEST DRAFT NOW** to verify the setup without consuming a scheduled ambush.
 
@@ -48,7 +48,7 @@ When activated:
 5. If you switch to another tab in the drafted Chrome window before reaching the quota, DRAFTED immediately returns you to the manuscript tab unless that tab matches an allowed reference URL.
 6. If you close the drafted tab, DRAFTED reopens it and preserves the current count.
 7. At zero, the HUD briefly reads `DISCHARGED.` and then quietly fades away, leaving you in the manuscript if you want to keep writing.
-8. A tiny emergency-exit control remains at the upper-left during an active draft. It immediately ends the current session without disarming future scheduled ambushes.
+8. When DRAFTED blocks a tab switch, the `YOU ARE STILL DRAFTED` warning includes a tiny emergency-exit control at its upper-left. It immediately ends the current session without disarming future scheduled ambushes.
 
 Spaces count. Backspace counts. Arrow keys count. DRAFTED is intentionally not interested in judging what you wrote.
 
@@ -63,7 +63,7 @@ Spaces count. Backspace counts. Arrow keys count. DRAFTED is intentionally not i
 
 DRAFTED never reads or stores the text you type. The content script sends only a generic keystroke signal; the service worker stores only a numeric count.
 
-Closing Chrome, using another browser/window, disabling the extension, or using the in-page emergency exit remains a deliberate escape hatch. The emergency exit ends only the current drafting session; DRAFTED stays armed for later scheduled ambushes. This is a playful commitment device, not malware.
+Closing Chrome, using another browser/window, disabling the extension, or using the warning-overlay emergency exit remains a deliberate escape hatch. The emergency exit ends only the current drafting session; DRAFTED stays armed for later scheduled ambushes. This is a playful commitment device, not malware.
 
 ## Installation
 
@@ -87,7 +87,7 @@ Developers can alternatively clone the repository and load the repository direct
 
 Updates are manual: download a newer release, replace the extracted files, and click **Reload** on the extension card in `chrome://extensions/`.
 
-The settings page includes **TEST DRAFT NOW**, which starts a session immediately without consuming one of the day's scheduled ambushes. Manual tests work even on inactive weekdays. The bottom of the settings page also documents the always-available emergency exit.
+The settings page includes **TEST DRAFT NOW**, which starts a session immediately without consuming one of the day's scheduled ambushes. Manual tests work even on inactive weekdays. The bottom of the settings page also documents the emergency exit shown on the blocked-tab warning.
 
 ## Privacy
 
