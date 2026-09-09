@@ -11,7 +11,7 @@ It does **not** care whether the writing is good. It does **not** even care whet
 
 The point is not productivity. The point is contact.
 
-Current release: **v1.1.0**. See [`CHANGELOG.md`](./CHANGELOG.md) for release history and unreleased changes on `main`.
+Current release: **v1.2.0**. See [`CHANGELOG.md`](./CHANGELOG.md) for release history.
 
 ## Quick start
 
@@ -79,12 +79,12 @@ Closing Chrome, using another browser/window, disabling the extension, or using 
 
 DRAFTED is designed for local installation and is **not** published to the Chrome Web Store.
 
-1. Open [Releases](https://github.com/yo4e/DRAFTED/releases/latest) and download `DRAFTED-v1.1.0.zip`.
+1. Open [Releases](https://github.com/yo4e/DRAFTED/releases/latest) and download `DRAFTED-v1.2.0.zip`.
 2. Unzip it.
 3. Open `chrome://extensions/` in Chrome.
 4. Turn on **Developer mode**.
 5. Click **Load unpacked**.
-6. Select the extracted `DRAFTED-v1.1.0` directory — the directory containing `manifest.json`.
+6. Select the extracted `DRAFTED-v1.2.0` directory — the directory containing `manifest.json`.
 7. Chrome opens DRAFTED's settings page on first install.
 8. Configure the target URL, optional allowed reference URLs, active days, quota, ambushes per day, and excluded hours.
 9. Turn on **ARM DRAFTED**, save, and approve host access for the configured target origin when Chrome asks.
@@ -121,7 +121,7 @@ The extension itself has no build step and no runtime dependencies. Scheduler/se
 npm test
 ```
 
-A real Google Docs document still requires manual verification because browser permission and rich-editor event behavior cannot be proven by the Node tests. v1.1.0 was also hands-on tested in Chrome before packaging.
+A real Google Docs document still requires manual verification because browser permission and rich-editor event behavior cannot be proven by the Node tests. v1.2.0 adds automated target-URL matching coverage and the release workflow runs the test suite plus JavaScript syntax checks before packaging.
 
 ## Design
 
