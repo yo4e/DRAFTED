@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Optional Ko-fi support link on the settings page; DRAFTED remains free, open source, local-first, and non-intrusive
+
+### Changed
+
+- A scheduled ambush is silently consumed when the configured manuscript is already the active tab in the focused Chrome window, so DRAFTED does not interrupt an ongoing writing flow
+- Target matching for that check ignores harmless query/hash/trailing-slash differences while still requiring the same origin and document path
+
+### Verification
+
+- Added Node coverage for active-manuscript URL matching
+- Manual Chrome verification is still required for the actual scheduled-alarm / focused-tab behavior before release
+
 ## v1.1.0 — 2026-09-01
 
 Usability-focused release shaped by hands-on writing use.

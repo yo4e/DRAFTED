@@ -5,13 +5,13 @@
 
 DRAFTED is a tiny Chrome extension that ambushes you with the document you have been avoiding.
 
-At random eligible times, DRAFTED opens your configured writing URL. Until you reach your keystroke quota, switching to another tab in that Chrome window sends you straight back — unless the destination matches one of your allowed reference URLs.
+At random eligible times, DRAFTED opens your configured writing URL. If that manuscript is already the active tab in the focused Chrome window, the ambush is silently consumed instead. Until you reach your keystroke quota, switching to another tab in that Chrome window sends you straight back — unless the destination matches one of your allowed reference URLs.
 
 It does **not** care whether the writing is good. It does **not** even care whether you write meaningful text. If necessary, hit the space bar 300 times and earn your discharge.
 
 The point is not productivity. The point is contact.
 
-Current release: **v1.1.0**. See [`CHANGELOG.md`](./CHANGELOG.md) for release history.
+Current release: **v1.1.0**. See [`CHANGELOG.md`](./CHANGELOG.md) for release history and unreleased changes on `main`.
 
 ## Quick start
 
@@ -38,6 +38,8 @@ DRAFTED has six essential settings:
 ## Scheduling
 
 DRAFTED does not roll a percentage chance every minute. It chooses the configured number of random eligible future minutes for the current local day and schedules ambushes there.
+
+If a scheduled ambush fires while the configured manuscript is already the active tab in the focused Chrome window, DRAFTED treats that ambush as satisfied: it does not open a duplicate tab, show the intro overlay, or immediately reschedule that ambush. **TEST DRAFT NOW** is intentionally unchanged and still starts a manual session.
 
 If Chrome was closed when a scheduled time passed, DRAFTED reconciles the day on the next browser startup: stale times are discarded and the remaining unstarted ambushes are rescheduled into eligible future minutes that day. If there are not enough eligible minutes left — for example late at night or after exclusions consume the rest of the day — the day may end with fewer ambushes than configured.
 
@@ -90,6 +92,12 @@ DRAFTED is designed for local installation and is **not** published to the Chrom
 Developers can alternatively clone the repository and load the repository directory directly.
 
 Updates are manual: download a newer release, replace the extracted files, and click **Reload** on the extension card in `chrome://extensions/`.
+
+## Support
+
+DRAFTED is free and open source. If it helped you write, you can support development on Ko-fi: https://ko-fi.com/yo4e
+
+The extension never shows donation prompts during a drafting session or on `DISCHARGED.`; the settings-page link opens Ko-fi only when you click it.
 
 ## Privacy
 

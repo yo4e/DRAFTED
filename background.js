@@ -10,6 +10,7 @@ import {
   normalizeSettings,
   selectRandomUnique,
 } from "./lib/core.js";
+import { matchesTargetUrl } from "./lib/target.js";
 
 const AMBUSH_PREFIX = "drafted:ambush:";
 const MIDNIGHT_ALARM = "drafted:midnight";
@@ -162,6 +163,13 @@ async function handleAmbushAlarm(alarm) {
     return;
   }
 
+  if (await isTargetActiveInFocusedChromeWindow(settings.targetUrl)) {
+    dailyState.started += 1;
+    await chrome.storage.local.set({ dailyState });
+    await reconcileTodaySchedule();
+    return;
+  }
+
   dailyState = await getDailyState();
   dailyState.started += 1;
   await chrome.storage.local.set({ dailyState });
@@ -266,6 +274,18 @@ async function scheduleMidnightAlarm(now) {
 async function clearAmbushAlarms() {
   const alarms = await chrome.alarms.getAll();
   await Promise.all(alarms.filter(({ name }) => name.startsWith(AMBUSH_PREFIX)).map(({ name }) => chrome.alarms.clear(name)));
+}
+
+async function isTargetActiveInFocusedChromeWindow(targetUrl) {
+  try {
+    const focusedWindow = await chrome.windows.getLastFocused({ populate: true });
+    if (!focusedWindow?.focused) return false;
+    const activeTab = focusedWindow.tabs?.find((tab) => tab.active);
+    return matchesTargetUrl(activeTab?.url ?? "", targetUrl);
+  } catch (error) {
+    console.warn("DRAFTED could not inspect the focused manuscript tab", error);
+    return false;
+  }
 }
 
 async function getSettings() {

@@ -101,3 +101,4 @@ button:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 #596040; 
   letter-spacing: .09em;
 }
 .safety-note p { margin: 0; max-width: 64ch; }
+.safety-note a { color: inherit; text-underline-offset: 2px; }
