@@ -1,0 +1,91 @@
+name: Release v1.2.0
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/release-v1.2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify manifest version
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e 'const m=require("./manifest.json"); if (m.version !== "1.2.0") { throw new Error(`Expected manifest 1.2.0, got ${m.version}`); }'
+
+      - name: Run tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm test
+
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in background.js content.js options.js lib/core.js lib/target.js; do
+            node --check "$file"
+          done
+
+      - name: Build Chrome extension ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_name="DRAFTED-v1.2.0"
+          mkdir -p "dist/${release_name}/lib" "dist/${release_name}/icons"
+          cp manifest.json background.js content.js content.css options.html options.js options.css "dist/${release_name}/"
+          cp lib/core.js lib/target.js "dist/${release_name}/lib/"
+          cp icons/icon16.png icons/icon48.png icons/icon128.png "dist/${release_name}/icons/"
+          cd dist
+          zip -r "${release_name}.zip" "${release_name}"
+
+      - name: Prepare release notes
+        shell: bash
+        run: |
+          cat > release-notes.md <<'EOF'
+          DRAFTED v1.2.0 is a small real-use release focused on preserving writing flow.
+
+          Highlights:
+          - scheduled ambushes are silently consumed when the configured manuscript is already the active tab in the focused Chrome window
+          - active-manuscript matching tolerates harmless query, hash, and trailing-slash differences
+          - optional Ko-fi support link on the settings page only
+          - no donation prompts during drafting or discharge
+          - local-first / no-telemetry behavior remains unchanged
+
+          Verification:
+          - full Node test suite and JavaScript syntax checks run before packaging
+          - the scheduled-alarm / focused-tab path was not manually re-verified in Chrome before publication; continued real-use verification is expected
+
+          Install: download `DRAFTED-v1.2.0.zip`, extract it, open `chrome://extensions/`, enable Developer mode, choose Load unpacked, and select the extracted `DRAFTED-v1.2.0` folder.
+
+          This release is for direct/local use. DRAFTED is not published to the Chrome Web Store.
+          EOF
+
+      - name: Create GitHub Release and upload ZIP
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v1.2.0"
+          asset="dist/DRAFTED-v1.2.0.zip"
+
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" \
+              --target "$GITHUB_SHA" \
+              --title "DRAFTED v1.2.0" \
+              --notes-file release-notes.md
+          fi
+
+          gh release upload "$tag" "$asset" --clobber

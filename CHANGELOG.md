@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## v1.2.0 — 2026-09-09
+
+Small real-use release focused on preserving an existing writing flow instead of interrupting it.
 
 ### Added
 
@@ -14,7 +16,8 @@
 ### Verification
 
 - Added Node coverage for active-manuscript URL matching
-- Manual Chrome verification is still required for the actual scheduled-alarm / focused-tab behavior before release
+- Release workflow runs the full Node test suite plus JavaScript syntax checks before publishing the ZIP
+- The scheduled-alarm / focused-tab path was not manually re-verified in Chrome before this release; continued real-use verification is expected
 
 ## v1.1.0 — 2026-09-01
 

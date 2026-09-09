@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DRAFTED",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Opens your writing document at random times and keeps you there until you hit a keystroke quota. Configure safe hours, active days, reference URLs, and an emergency exit.",
   "permissions": ["storage", "alarms", "scripting", "tabs"],
   "optional_host_permissions": ["https://*/*", "http://*/*"],
