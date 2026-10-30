@@ -11,7 +11,7 @@ It does **not** care whether the writing is good. It does **not** even care whet
 
 The point is not productivity. The point is contact.
 
-Current release: **v1.2.0**. See [`CHANGELOG.md`](./CHANGELOG.md) for release history.
+Latest public release: **v1.2.0**. This branch prepares **v1.2.1-rc.1**, an unpublished ZIP for hands-on verification. See [`RELEASE_NOTES.md`](./RELEASE_NOTES.md), [`INSTALL.txt`](./INSTALL.txt), and [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## Quick start
 
@@ -91,6 +91,8 @@ DRAFTED is designed for local installation and is **not** published to the Chrom
 
 Developers can alternatively clone the repository and load the repository directory directly.
 
+For the v1.2.1-rc.1 test ZIP, extract `DRAFTED-v1.2.1-rc.1.zip` and load its `DRAFTED-v1.2.1-rc.1` folder. Disable the older DRAFTED copy first so two versions do not enforce sessions simultaneously. The new extension's displayed version must be `1.2.1-rc.1`. A separately loaded folder can have separate settings; configure its target, arm it, and use **TEST DRAFT NOW**. See `INSTALL.txt` inside the ZIP for the full test and rollback steps.
+
 Updates are manual: download a newer release, replace the extracted files, and click **Reload** on the extension card in `chrome://extensions/`.
 
 ## Support
@@ -120,6 +122,8 @@ The extension itself has no build step and no runtime dependencies. Scheduler/se
 ```bash
 npm test
 ```
+
+To produce a local distributable from committed files, run `npm run package` (Node.js plus the system `zip`/`unzip` commands). It runs tests and syntax checks, packages only the explicit runtime/documentation allowlist, verifies every archived byte against its source, and writes `dist/DRAFTED-v1.2.1-rc.1.zip` plus its SHA-256 checksum. `BUILD_INFO.json` inside the ZIP identifies the source commit. No GitHub Release, merge, or upload is performed by this command. The existing v1.2.0 release workflow remains historical and must not be used to publish this candidate.
 
 A real Google Docs document still requires manual verification because browser permission and rich-editor event behavior cannot be proven by the Node tests. The tab-return tests simulate Chrome's temporary tab-edit rejection; they do not reproduce physical tab-strip gestures. See [`tests/MANUAL.md`](./tests/MANUAL.md) for the isolated Chrome checklist. The release workflow runs the test suite plus JavaScript syntax checks before packaging.
 

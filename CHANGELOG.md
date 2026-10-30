@@ -1,12 +1,23 @@
 # Changelog
 
-## Unreleased
+## v1.2.1-rc.1 — 2026-10-30 (test package; not publicly released)
 
 ### Fixed
 
 - Retry temporary Chrome tab-edit failures during tab-strip interactions, rechecking the active session and current destination before each attempt. Delays double from 100 ms up to 2 seconds during prolonged contention, so a long hold still returns after release without continuous fast polling. Rapid activations are serialized; ending the session cancels pending returns.
 - Show the emergency-exit control on the initial drafting overlay as well as subsequent blocked-tab warnings.
 - Preserve allowed reference URLs and deliberate separate-window exits during retries.
+
+### Verification
+
+- 38 automated tests cover scheduling, tab-return races/backoff, session termination, and initial/warning overlay exits.
+- Isolated headless Chrome confirms the exit controls, tab return, allowed references, separate windows, quota discharge, and recovery from injected temporary tab-edit failures.
+- Native tab-strip double-click/long-press gestures and Google Docs still need real-use verification.
+
+### Packaging
+
+- Chrome numeric version `1.2.1`, displayed version `1.2.1-rc.1`, to distinguish this test build from v1.2.0.
+- `npm run package` creates a verified ZIP from an explicit runtime/documentation allowlist, with installation instructions and source-commit information. It does not publish a release.
 
 ## v1.2.0 — 2026-09-09
 
