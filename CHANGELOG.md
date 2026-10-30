@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Retry temporary Chrome tab-edit failures during tab-strip interactions, rechecking the active session and current destination before each attempt. Rapid activations are serialized; ending the session cancels pending returns.
+- Show the emergency-exit control on the initial drafting overlay as well as subsequent blocked-tab warnings.
+- Preserve allowed reference URLs and deliberate separate-window exits during retries.
+
 ## v1.2.0 — 2026-09-09
 
 Small real-use release focused on preserving an existing writing flow instead of interrupting it.

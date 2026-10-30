@@ -20,7 +20,7 @@ Current release: **v1.2.0**. See [`CHANGELOG.md`](./CHANGELOG.md) for release hi
 3. Choose active weekdays, excluded hours, ambushes per day, and the keystroke quota.
 4. Turn on **ARM DRAFTED** and save. Random activation times stay hidden.
 5. When drafted, type until the HUD reaches zero. You can drag the HUD anywhere and DRAFTED remembers its position.
-6. If something genuinely urgent happens, try to leave the manuscript: the `YOU ARE STILL DRAFTED` warning includes a tiny emergency-exit icon at its upper-left. Use it to end only the current session.
+6. If something urgent happens, use the tiny emergency-exit icon at the upper-left of the initial `YOU HAVE BEEN DRAFTED` overlay or a later `YOU ARE STILL DRAFTED` warning. It ends only the current session.
 
 Use **TEST DRAFT NOW** to verify the setup without consuming a scheduled ambush.
 
@@ -55,10 +55,10 @@ Inactive weekdays schedule none. **TEST DRAFT NOW** still works on inactive days
 
 3. Every non-modifier keydown counts as one keystroke. Holding a key down does not auto-farm the counter.
 4. A small HUD shows the remaining count. Drag the HUD anywhere on the page; its position is remembered.
-5. If you switch to another tab in the drafted Chrome window before reaching the quota, DRAFTED immediately returns you to the manuscript unless that tab matches an allowed reference URL.
+5. If you switch to another tab in the drafted Chrome window before reaching the quota, DRAFTED returns you to the manuscript unless that tab matches an allowed reference URL. If Chrome temporarily refuses the return while you hold or drag a tab, DRAFTED retries after the interaction allows it.
 6. If you close the drafted tab, DRAFTED reopens it and preserves the current count.
 7. At zero, the HUD briefly reads `DISCHARGED.` and quietly fades away, leaving you in the manuscript if you want to keep writing.
-8. When DRAFTED blocks a tab switch, the `YOU ARE STILL DRAFTED` warning includes a tiny emergency-exit control at its upper-left. It immediately ends the current session without disarming future scheduled ambushes.
+8. Both the initial `YOU HAVE BEEN DRAFTED` overlay and the `YOU ARE STILL DRAFTED` warning include a tiny emergency-exit control at their upper-left. It immediately ends the current session without disarming future scheduled ambushes. The control disappears with the overlay after 1.8 seconds; a later blocked tab switch shows it again.
 
 Spaces count. Backspace counts. Arrow keys count. DRAFTED is intentionally not interested in judging what you wrote.
 
@@ -73,7 +73,7 @@ Spaces count. Backspace counts. Arrow keys count. DRAFTED is intentionally not i
 
 DRAFTED never reads or stores the text you type. The content script sends only a generic keystroke signal; the service worker stores only a numeric count.
 
-Closing Chrome, using another browser/window, disabling the extension, or using the warning-overlay emergency exit remains a deliberate escape hatch. The emergency exit ends only the current drafting session; DRAFTED stays armed for later scheduled ambushes. This is a playful commitment device, not malware.
+Closing Chrome, using another browser/window, disabling the extension, or using the overlay emergency exit remains a deliberate escape hatch. The emergency exit ends only the current drafting session; DRAFTED stays armed for later scheduled ambushes. This is a playful commitment device, not malware.
 
 ## Installation
 
@@ -115,13 +115,13 @@ Only settings, scheduling state, numeric progress, and the HUD position are stor
 
 ## Development
 
-The extension itself has no build step and no runtime dependencies. Scheduler/settings helpers have Node tests:
+The extension itself has no build step and no runtime dependencies. Scheduler/settings helpers, tab-return races, and overlay controls have Node tests:
 
 ```bash
 npm test
 ```
 
-A real Google Docs document still requires manual verification because browser permission and rich-editor event behavior cannot be proven by the Node tests. v1.2.0 adds automated target-URL matching coverage and the release workflow runs the test suite plus JavaScript syntax checks before packaging.
+A real Google Docs document still requires manual verification because browser permission and rich-editor event behavior cannot be proven by the Node tests. The tab-return tests simulate Chrome's temporary tab-edit rejection; they do not reproduce physical tab-strip gestures. See [`tests/MANUAL.md`](./tests/MANUAL.md) for the isolated Chrome checklist. The release workflow runs the test suite plus JavaScript syntax checks before packaging.
 
 ## Design
 

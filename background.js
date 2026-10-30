@@ -14,8 +14,12 @@ import { matchesTargetUrl } from "./lib/target.js";
 
 const AMBUSH_PREFIX = "drafted:ambush:";
 const MIDNIGHT_ALARM = "drafted:midnight";
+const TAB_RETURN_RETRY_MS = 100;
 let reopenInProgress = false;
 let keystrokeChain = Promise.resolve();
+let tabReturnChain = Promise.resolve();
+let tabReturnTimer;
+let tabReturnGeneration = 0;
 
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   if (reason === "install") {
@@ -79,20 +83,63 @@ chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
   const session = await getActiveSession();
   if (!session || windowId !== session.windowId || tabId === session.tabId) return;
 
-  try {
-    const tab = await chrome.tabs.get(tabId);
-    if (matchesAllowedUrl(tab.url ?? "", session.allowedUrls ?? [])) return;
-    await chrome.tabs.update(session.tabId, { active: true });
-    await safeSendToTab(session.tabId, { type: "SHOW_WARNING", remaining: session.remaining });
-  } catch (error) {
-    console.warn("DRAFTED could not reactivate drafted tab", error);
-  }
+  cancelTabReturn();
+  queueTabReturn(session, tabReturnGeneration);
 });
+
+function cancelTabReturn() {
+  clearTimeout(tabReturnTimer);
+  tabReturnTimer = undefined;
+  tabReturnGeneration += 1;
+}
+
+function queueTabReturn(session, generation) {
+  // Coalesce rapid activations and never overlap Chrome tab-edit requests.
+  tabReturnChain = tabReturnChain
+    .then(() => returnToDraftedTab(session, generation))
+    .catch(console.error);
+}
+
+function isSameSession(session, expected) {
+  return session && session.startedAt === expected.startedAt
+    && session.tabId === expected.tabId && session.windowId === expected.windowId;
+}
+
+async function returnToDraftedTab(expected, generation) {
+  if (generation !== tabReturnGeneration) return;
+  try {
+    if (!isSameSession(await getActiveSession(), expected)) return;
+    const draftedTab = await chrome.tabs.get(expected.tabId);
+    const [activeTab] = await chrome.tabs.query({ active: true, windowId: expected.windowId });
+    const session = await getActiveSession();
+    if (generation !== tabReturnGeneration || !isSameSession(session, expected)) return;
+    // Recheck the current destination, not the tab from an earlier click. A
+    // detached manuscript must not pull the writer into another window.
+    if (draftedTab.windowId !== session.windowId || !activeTab || activeTab.id === session.tabId) return;
+    if (matchesAllowedUrl(activeTab.pendingUrl || activeTab.url || "", session.allowedUrls ?? [])) return;
+    await chrome.tabs.update(session.tabId, { active: true });
+    const latest = await getActiveSession();
+    if (generation !== tabReturnGeneration || !isSameSession(latest, expected)) return;
+    await safeSendToTab(latest.tabId, { type: "SHOW_WARNING", remaining: latest.remaining });
+  } catch (error) {
+    // Chrome temporarily rejects tab edits while the tab strip is held or
+    // dragged. Keep retrying while that interaction lasts, but not other errors.
+    if (!String(error?.message ?? error).includes("Tabs cannot be edited right now")) {
+      console.warn("DRAFTED could not reactivate drafted tab", error);
+      return;
+    }
+  }
+  if (generation === tabReturnGeneration) {
+    // Also verify once after success in case another activation raced the edit.
+    tabReturnTimer = setTimeout(() => queueTabReturn(expected, generation), TAB_RETURN_RETRY_MS);
+  }
+}
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   const session = await getActiveSession();
   if (!session || session.tabId !== tabId || reopenInProgress) return;
 
+  cancelTabReturn();
   reopenInProgress = true;
   try {
     const tab = await chrome.tabs.create({ url: session.targetUrl, active: true });
@@ -117,6 +164,7 @@ async function reconcileAfterSettingsChange() {
   const settings = await getSettings();
   const session = await getActiveSession();
   if (session && (!settings.enabled || settings.targetUrl !== session.targetUrl)) {
+    cancelTabReturn();
     await chrome.storage.session.remove("activeSession");
     await safeSendToTab(session.tabId, { type: "SESSION_ENDED" });
   } else if (session) {
@@ -130,6 +178,7 @@ async function endCurrentSession(sender) {
   const session = await getActiveSession();
   if (!session || sender.tab.id !== session.tabId) return;
 
+  cancelTabReturn();
   await chrome.storage.session.remove("activeSession");
   await safeSendToTab(session.tabId, { type: "SESSION_ENDED" });
 }
@@ -212,6 +261,7 @@ async function handleKeystroke(sender) {
   await setActiveSession(updated);
 
   if (remaining === 0) {
+    cancelTabReturn();
     await chrome.storage.session.remove("activeSession");
     await safeSendToTab(session.tabId, { type: "DISCHARGED" });
     return;
