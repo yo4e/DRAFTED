@@ -55,7 +55,7 @@ Inactive weekdays schedule none. **TEST DRAFT NOW** still works on inactive days
 
 3. Every non-modifier keydown counts as one keystroke. Holding a key down does not auto-farm the counter.
 4. A small HUD shows the remaining count. Drag the HUD anywhere on the page; its position is remembered.
-5. If you switch to another tab in the drafted Chrome window before reaching the quota, DRAFTED returns you to the manuscript unless that tab matches an allowed reference URL. If Chrome temporarily refuses the return while you hold or drag a tab, DRAFTED retries after the interaction allows it.
+5. If you switch to another tab in the drafted Chrome window before reaching the quota, DRAFTED returns you to the manuscript unless that tab matches an allowed reference URL. If Chrome temporarily refuses the return while you hold or drag a tab, DRAFTED retries after the interaction allows it. During a long hold the retries slow down, so returning can take about two seconds after release.
 6. If you close the drafted tab, DRAFTED reopens it and preserves the current count.
 7. At zero, the HUD briefly reads `DISCHARGED.` and quietly fades away, leaving you in the manuscript if you want to keep writing.
 8. Both the initial `YOU HAVE BEEN DRAFTED` overlay and the `YOU ARE STILL DRAFTED` warning include a tiny emergency-exit control at their upper-left. It immediately ends the current session without disarming future scheduled ambushes. The control disappears with the overlay after 1.8 seconds; a later blocked tab switch shows it again.
@@ -122,6 +122,8 @@ npm test
 ```
 
 A real Google Docs document still requires manual verification because browser permission and rich-editor event behavior cannot be proven by the Node tests. The tab-return tests simulate Chrome's temporary tab-edit rejection; they do not reproduce physical tab-strip gestures. See [`tests/MANUAL.md`](./tests/MANUAL.md) for the isolated Chrome checklist. The release workflow runs the test suite plus JavaScript syntax checks before packaging.
+
+Tab-return retry delays are 100, 200, 400, 800, 1600, then 2000 ms, capped at 2000 ms. There is no attempt limit: stopping after a fixed count would let a sufficiently long hold bypass enforcement. Only the temporary tab-edit error retries; successful returns get one 100 ms verification. Session termination cancels the timer and invalidates queued work. Allowed destinations and a detached manuscript stop the next check. Switching focus to another window does not cancel checks inside the original drafted window, but those checks never focus a window or activate a tab in another window.
 
 ## Design
 

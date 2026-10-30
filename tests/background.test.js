@@ -90,11 +90,12 @@ async function setup(t) {
     await setImmediate();
     return response;
   }
-  async function tick() {
+  async function tick(expectedDelay) {
     const pending = [...timers.values()];
     timers.clear();
     for (const timer of pending) {
-      assert.equal(timer.delay, 100);
+      if (expectedDelay !== undefined) assert.equal(timer.delay, expectedDelay);
+      assert.ok(timer.delay >= 100 && timer.delay <= 2000);
       timer.callback();
     }
     await setImmediate();
@@ -128,17 +129,48 @@ test("tab-strip contention retries until a long hold ends, with one timer", asyn
   await h.flush();
   for (let i = 0; i < 40; i += 1) {
     assert.equal(h.timers.size, 1);
-    await h.tick();
+    await h.tick(Math.min(100 * (2 ** i), 2000));
   }
   assert.equal(h.tabs.get(2).active, true);
   assert.equal(h.messages.length, 0);
   held = false;
-  await h.tick();
+  await h.tick(2000);
   assert.equal(attempts, 42);
   assert.equal(h.tabs.get(1).active, true);
-  await h.tick();
+  await h.tick(100);
   assert.equal(h.timers.size, 0);
   assert.equal(h.warnings.length, 0);
+});
+
+test("persistent contention reduces retry frequency over a simulated minute", async (t) => {
+  const h = await setup(t);
+  let attempts = 0;
+  h.chrome.tabs.update = async () => { attempts += 1; throw new Error(DRAG_ERROR); };
+  await h.activate(2);
+  await h.flush();
+  let elapsed = 0;
+  while (elapsed + [...h.timers.values()][0].delay <= 60_000) {
+    assert.equal(h.timers.size, 1);
+    elapsed += [...h.timers.values()][0].delay;
+    await h.tick();
+  }
+  assert.equal(attempts, 34, "one immediate attempt, five short retries, then one per two seconds");
+  assert.equal([...h.timers.values()][0].delay, 2000);
+  assert.equal(h.messages.length, 0);
+});
+
+test("a new activation starts with a fresh delay and replaces the old backoff timer", async (t) => {
+  const h = await setup(t);
+  h.chrome.tabs.update = async () => { throw new Error(DRAG_ERROR); };
+  await h.activate(2);
+  await h.flush();
+  for (const delay of [100, 200, 400, 800, 1600]) await h.tick(delay);
+  assert.equal([...h.timers.values()][0].delay, 2000);
+  await h.activate(2);
+  await h.flush();
+  assert.equal(h.timers.size, 1);
+  await h.tick(100);
+  assert.equal([...h.timers.values()][0].delay, 200);
 });
 
 test("rapid repeated activations coalesce and do not overlap tab edits", async (t) => {
@@ -180,6 +212,7 @@ for (const destination of ["reference", "pending reference", "manuscript", "deta
     h.chrome.tabs.update = async () => { throw new Error(DRAG_ERROR); };
     await h.activate(2);
     await h.flush();
+    for (const delay of [100, 200, 400, 800, 1600]) await h.tick(delay);
     h.chrome.tabs.update = update;
     if (destination === "reference") h.tabs.get(2).url = "https://example.com/notes/chapter";
     if (destination === "pending reference") h.tabs.get(2).pendingUrl = "https://example.com/notes";
@@ -207,6 +240,7 @@ test("retry only activates the drafted window without focusing another window", 
   h.chrome.tabs.update = async () => { throw new Error(DRAG_ERROR); };
   await h.activate(2);
   await h.flush();
+  for (const delay of [100, 200, 400, 800, 1600]) await h.tick(delay);
   await h.activate(4);
   h.chrome.tabs.update = update;
   await h.tick();
@@ -220,6 +254,7 @@ for (const reason of ["emergency", "quota", "disabled", "target changed"]) {
     h.chrome.tabs.update = async () => { throw new Error(DRAG_ERROR); };
     await h.activate(2);
     await h.flush();
+    for (const delay of [100, 200, 400, 800, 1600]) await h.tick(delay);
     if (reason === "emergency") await h.message("EMERGENCY_EXIT");
     if (reason === "quota") {
       for (let i = 0; i < 3; i += 1) await h.message("KEYSTROKE");

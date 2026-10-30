@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- Retry temporary Chrome tab-edit failures during tab-strip interactions, rechecking the active session and current destination before each attempt. Rapid activations are serialized; ending the session cancels pending returns.
+- Retry temporary Chrome tab-edit failures during tab-strip interactions, rechecking the active session and current destination before each attempt. Delays double from 100 ms up to 2 seconds during prolonged contention, so a long hold still returns after release without continuous fast polling. Rapid activations are serialized; ending the session cancels pending returns.
 - Show the emergency-exit control on the initial drafting overlay as well as subsequent blocked-tab warnings.
 - Preserve allowed reference URLs and deliberate separate-window exits during retries.
 

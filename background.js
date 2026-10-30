@@ -15,6 +15,7 @@ import { matchesTargetUrl } from "./lib/target.js";
 const AMBUSH_PREFIX = "drafted:ambush:";
 const MIDNIGHT_ALARM = "drafted:midnight";
 const TAB_RETURN_RETRY_MS = 100;
+const TAB_RETURN_MAX_RETRY_MS = 2_000;
 let reopenInProgress = false;
 let keystrokeChain = Promise.resolve();
 let tabReturnChain = Promise.resolve();
@@ -93,10 +94,10 @@ function cancelTabReturn() {
   tabReturnGeneration += 1;
 }
 
-function queueTabReturn(session, generation) {
+function queueTabReturn(session, generation, failureDelay = TAB_RETURN_RETRY_MS) {
   // Coalesce rapid activations and never overlap Chrome tab-edit requests.
   tabReturnChain = tabReturnChain
-    .then(() => returnToDraftedTab(session, generation))
+    .then(() => returnToDraftedTab(session, generation, failureDelay))
     .catch(console.error);
 }
 
@@ -105,8 +106,10 @@ function isSameSession(session, expected) {
     && session.tabId === expected.tabId && session.windowId === expected.windowId;
 }
 
-async function returnToDraftedTab(expected, generation) {
+async function returnToDraftedTab(expected, generation, failureDelay) {
   if (generation !== tabReturnGeneration) return;
+  let delay = TAB_RETURN_RETRY_MS;
+  let nextFailureDelay = TAB_RETURN_RETRY_MS;
   try {
     if (!isSameSession(await getActiveSession(), expected)) return;
     const draftedTab = await chrome.tabs.get(expected.tabId);
@@ -123,15 +126,17 @@ async function returnToDraftedTab(expected, generation) {
     await safeSendToTab(latest.tabId, { type: "SHOW_WARNING", remaining: latest.remaining });
   } catch (error) {
     // Chrome temporarily rejects tab edits while the tab strip is held or
-    // dragged. Keep retrying while that interaction lasts, but not other errors.
+    // dragged. Back off prolonged contention without giving up on a long hold.
     if (!String(error?.message ?? error).includes("Tabs cannot be edited right now")) {
       console.warn("DRAFTED could not reactivate drafted tab", error);
       return;
     }
+    delay = failureDelay;
+    nextFailureDelay = Math.min(failureDelay * 2, TAB_RETURN_MAX_RETRY_MS);
   }
   if (generation === tabReturnGeneration) {
     // Also verify once after success in case another activation raced the edit.
-    tabReturnTimer = setTimeout(() => queueTabReturn(expected, generation), TAB_RETURN_RETRY_MS);
+    tabReturnTimer = setTimeout(() => queueTabReturn(expected, generation, nextFailureDelay), delay);
   }
 }
 
