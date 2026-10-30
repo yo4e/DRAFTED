@@ -11,7 +11,7 @@ It does **not** care whether the writing is good. It does **not** even care whet
 
 The point is not productivity. The point is contact.
 
-Current release: **v1.2.0**. See [`CHANGELOG.md`](./CHANGELOG.md) for release history.
+Latest public release: **v1.2.0**. This branch prepares **v1.2.1-rc.1**, an unpublished ZIP for hands-on verification. See [`RELEASE_NOTES.md`](./RELEASE_NOTES.md), [`INSTALL.txt`](./INSTALL.txt), and [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## Quick start
 
@@ -20,7 +20,7 @@ Current release: **v1.2.0**. See [`CHANGELOG.md`](./CHANGELOG.md) for release hi
 3. Choose active weekdays, excluded hours, ambushes per day, and the keystroke quota.
 4. Turn on **ARM DRAFTED** and save. Random activation times stay hidden.
 5. When drafted, type until the HUD reaches zero. You can drag the HUD anywhere and DRAFTED remembers its position.
-6. If something genuinely urgent happens, try to leave the manuscript: the `YOU ARE STILL DRAFTED` warning includes a tiny emergency-exit icon at its upper-left. Use it to end only the current session.
+6. If something urgent happens, use the tiny emergency-exit icon at the upper-left of the initial `YOU HAVE BEEN DRAFTED` overlay or a later `YOU ARE STILL DRAFTED` warning. It ends only the current session.
 
 Use **TEST DRAFT NOW** to verify the setup without consuming a scheduled ambush.
 
@@ -55,10 +55,10 @@ Inactive weekdays schedule none. **TEST DRAFT NOW** still works on inactive days
 
 3. Every non-modifier keydown counts as one keystroke. Holding a key down does not auto-farm the counter.
 4. A small HUD shows the remaining count. Drag the HUD anywhere on the page; its position is remembered.
-5. If you switch to another tab in the drafted Chrome window before reaching the quota, DRAFTED immediately returns you to the manuscript unless that tab matches an allowed reference URL.
+5. If you switch to another tab in the drafted Chrome window before reaching the quota, DRAFTED returns you to the manuscript unless that tab matches an allowed reference URL. If Chrome temporarily refuses the return while you hold or drag a tab, DRAFTED retries after the interaction allows it. During a long hold the retries slow down, so returning can take about two seconds after release.
 6. If you close the drafted tab, DRAFTED reopens it and preserves the current count.
 7. At zero, the HUD briefly reads `DISCHARGED.` and quietly fades away, leaving you in the manuscript if you want to keep writing.
-8. When DRAFTED blocks a tab switch, the `YOU ARE STILL DRAFTED` warning includes a tiny emergency-exit control at its upper-left. It immediately ends the current session without disarming future scheduled ambushes.
+8. Both the initial `YOU HAVE BEEN DRAFTED` overlay and the `YOU ARE STILL DRAFTED` warning include a tiny emergency-exit control at their upper-left. It immediately ends the current session without disarming future scheduled ambushes. The control disappears with the overlay after 1.8 seconds; a later blocked tab switch shows it again.
 
 Spaces count. Backspace counts. Arrow keys count. DRAFTED is intentionally not interested in judging what you wrote.
 
@@ -73,7 +73,7 @@ Spaces count. Backspace counts. Arrow keys count. DRAFTED is intentionally not i
 
 DRAFTED never reads or stores the text you type. The content script sends only a generic keystroke signal; the service worker stores only a numeric count.
 
-Closing Chrome, using another browser/window, disabling the extension, or using the warning-overlay emergency exit remains a deliberate escape hatch. The emergency exit ends only the current drafting session; DRAFTED stays armed for later scheduled ambushes. This is a playful commitment device, not malware.
+Closing Chrome, using another browser/window, disabling the extension, or using the overlay emergency exit remains a deliberate escape hatch. The emergency exit ends only the current drafting session; DRAFTED stays armed for later scheduled ambushes. This is a playful commitment device, not malware.
 
 ## Installation
 
@@ -90,6 +90,8 @@ DRAFTED is designed for local installation and is **not** published to the Chrom
 9. Turn on **ARM DRAFTED**, save, and approve host access for the configured target origin when Chrome asks.
 
 Developers can alternatively clone the repository and load the repository directory directly.
+
+For the v1.2.1-rc.1 test ZIP, extract `DRAFTED-v1.2.1-rc.1.zip` and load its `DRAFTED-v1.2.1-rc.1` folder. Disable the older DRAFTED copy first so two versions do not enforce sessions simultaneously. The new extension's displayed version must be `1.2.1-rc.1`. A separately loaded folder can have separate settings; configure its target, arm it, and use **TEST DRAFT NOW**. See `INSTALL.txt` inside the ZIP for the full test and rollback steps.
 
 Updates are manual: download a newer release, replace the extracted files, and click **Reload** on the extension card in `chrome://extensions/`.
 
@@ -115,13 +117,17 @@ Only settings, scheduling state, numeric progress, and the HUD position are stor
 
 ## Development
 
-The extension itself has no build step and no runtime dependencies. Scheduler/settings helpers have Node tests:
+The extension itself has no build step and no runtime dependencies. Scheduler/settings helpers, tab-return races, and overlay controls have Node tests:
 
 ```bash
 npm test
 ```
 
-A real Google Docs document still requires manual verification because browser permission and rich-editor event behavior cannot be proven by the Node tests. v1.2.0 adds automated target-URL matching coverage and the release workflow runs the test suite plus JavaScript syntax checks before packaging.
+To produce a local distributable from committed files, run `npm run package` (Node.js plus the system `zip`/`unzip` commands). It runs tests and syntax checks, packages only the explicit runtime/documentation allowlist, verifies every archived byte against its source, and writes `dist/DRAFTED-v1.2.1-rc.1.zip` plus its SHA-256 checksum. `BUILD_INFO.json` inside the ZIP identifies the source commit. No GitHub Release, merge, or upload is performed by this command. The existing v1.2.0 release workflow remains historical and must not be used to publish this candidate.
+
+A real Google Docs document still requires manual verification because browser permission and rich-editor event behavior cannot be proven by the Node tests. The tab-return tests simulate Chrome's temporary tab-edit rejection; they do not reproduce physical tab-strip gestures. See [`tests/MANUAL.md`](./tests/MANUAL.md) for the isolated Chrome checklist. The release workflow runs the test suite plus JavaScript syntax checks before packaging.
+
+Tab-return retry delays are 100, 200, 400, 800, 1600, then 2000 ms, capped at 2000 ms. There is no attempt limit: stopping after a fixed count would let a sufficiently long hold bypass enforcement. Only the temporary tab-edit error retries; successful returns get one 100 ms verification. Session termination cancels the timer and invalidates queued work. Allowed destinations and a detached manuscript stop the next check. Switching focus to another window does not cancel checks inside the original drafted window, but those checks never focus a window or activate a tab in another window.
 
 ## Design
 

@@ -30,7 +30,7 @@
     if (!isTopFrame || !message || typeof message.type !== "string") return;
 
     if (message.type === "SHOW_INTRO") {
-      showOverlay("YOU HAVE BEEN DRAFTED", `${message.remaining} KEYSTROKES TO DISCHARGE`);
+      showOverlay("YOU HAVE BEEN DRAFTED", `${message.remaining} KEYSTROKES TO DISCHARGE`, { showEmergencyExit: true });
       showHud(message.remaining);
     } else if (message.type === "SHOW_WARNING") {
       showOverlay("YOU ARE STILL DRAFTED", `${message.remaining} KEYSTROKES TO DISCHARGE`, { showEmergencyExit: true });
